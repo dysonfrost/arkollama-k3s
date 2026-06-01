@@ -1,0 +1,18 @@
+# kubeconfig
+.kube/
+kubeconfig*
+
+# Logs
+*.log
+*.swp
+
+# ARK temporary files
+.ark/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
