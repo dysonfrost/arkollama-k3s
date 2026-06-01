@@ -1,0 +1,9 @@
+apiVersion: ark.mckinsey.com/v1alpha1
+kind: Query
+metadata:
+  name: analyze-default-namespace
+spec:
+  input: "Analyze CPU and memory usage in the 'default' namespace. Identify pods using less than 30% of their request and suggest new limits."
+  target:
+    name: resource-sage
+    type: agent

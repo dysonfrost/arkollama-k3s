@@ -1,0 +1,9 @@
+apiVersion: ark.mckinsey.com/v1alpha1
+kind: Query
+metadata:
+  name: generate-redis-deployment
+spec:
+  input: "Create a Redis deployment with 1 replica, resource limits cpu=200m memory=256Mi, and expose it via a ClusterIP service on port 6379."
+  target:
+    name: manifest-master
+    type: agent

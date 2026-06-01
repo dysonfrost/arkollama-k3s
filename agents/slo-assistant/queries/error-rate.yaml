@@ -1,0 +1,9 @@
+apiVersion: ark.mckinsey.com/v1alpha1
+kind: Query
+metadata:
+  name: error-rate-api-gateway
+spec:
+  input: "What is the 5xx error rate for the 'api-gateway' service over the last hour? Provide a PromQL query and explain the result."
+  target:
+    name: slo-assistant
+    type: agent

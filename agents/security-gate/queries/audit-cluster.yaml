@@ -1,0 +1,9 @@
+apiVersion: ark.mckinsey.com/v1alpha1
+kind: Query
+metadata:
+  name: audit-cluster-security
+spec:
+  input: "Audit all namespaces for pods running in privileged mode or with hostPID enabled. Provide a remediation plan."
+  target:
+    name: security-gate
+    type: agent

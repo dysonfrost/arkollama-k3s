@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: slo-assistant-sa
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: slo-assistant-role
+rules:
+- apiGroups: [""]
+  resources: ["services", "pods"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: slo-assistant-binding
+subjects:
+- kind: ServiceAccount
+  name: slo-assistant-sa
+roleRef:
+  kind: Role
+  name: slo-assistant-role
+  apiGroup: rbac.authorization.k8s.io
