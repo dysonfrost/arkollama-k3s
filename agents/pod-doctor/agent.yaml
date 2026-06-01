@@ -2,7 +2,6 @@ apiVersion: ark.mckinsey.com/v1alpha1
 kind: Agent
 metadata:
   name: pod-doctor
-  namespace: ark-agents
 spec:
   description: "Kubernetes pod diagnostician using Hermes 3:8B."
   prompt: |
@@ -11,5 +10,4 @@ spec:
     Answer concisely with the root cause and a remediation step.
   modelRef:
     name: hermes-3-8b
-    namespace: ark-system
   tools: []

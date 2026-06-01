@@ -2,7 +2,6 @@ apiVersion: ark.mckinsey.com/v1alpha1
 kind: Query
 metadata:
   name: diagnose-coredns
-  namespace: ark-agents
 spec:
   input: "Why is the coredns pod in kube-system namespace not ready? Please diagnose."
   target:
