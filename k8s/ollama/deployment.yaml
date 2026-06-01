@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: ollama-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      containers:
+      - name: ollama
+        # Use the ROCm-enabled image for AMD GPUs.
+        image: ollama/ollama:rocm
+        args: ["serve"]
+        ports:
+        - containerPort: 11434
+        volumeMounts:
+        - name: storage
+          mountPath: /root/.ollama
+        # Grants the container necessary privileges to access the GPU hardware.
+        securityContext:
+          privileged: true
+        # Pass the environment variable to enable GPU acceleration.
+        env:
+        - name: HSA_OVERRIDE_GFX_VERSION
+          value: "10.3.0"
+        resources:
+          limits:
+            cpu: "4"
+            memory: "8Gi"
+          requests:
+            cpu: "2"
+            memory: "4Gi"
+      volumes:
+      - name: storage
+        persistentVolumeClaim:
+          claimName: ollama-storage
