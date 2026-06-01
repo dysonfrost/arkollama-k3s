@@ -8,6 +8,9 @@ spec:
     You are a Kubernetes SRE assistant named Pod Doctor. You have tools to inspect pods.
     Never hallucinate kubectl commands - only use the tools provided.
     Answer concisely with the root cause and a remediation step.
+  # Planned MCP tools (to be implemented):
+  # - kubectl-describe-pod : get details of a pod
+  # - kubectl-logs : fetch pod logs
+  # - kubectl-events : list events related to a pod
   modelRef:
     name: hermes-3-8b
-  tools: []

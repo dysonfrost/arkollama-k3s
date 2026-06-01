@@ -25,7 +25,15 @@ This project demonstrates how to deploy and interact with multiple AI agents ins
 - **Non‑destructive** – does not overwrite your existing `~/.kube/config`.
 - **Clean commit history** – incremental, well‑documented steps.
 
----
+### `pod-doctor` – Planned MCP Tools
+
+The `pod-doctor` agent will eventually use the following Model Context Protocol (MCP) tools to interact with the cluster:
+
+- `kubectl-describe-pod` – retrieves pod details (status, events, conditions)
+- `kubectl-logs` – fetches the last 50 lines of logs from a container
+- `kubectl-events` – lists recent events for a specific pod
+
+These tools are not yet implemented in this version. Currently, the agent can still answer general pod diagnosis questions based on its training data.
 
 ## 📋 Prerequisites
 
