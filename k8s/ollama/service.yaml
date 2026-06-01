@@ -5,8 +5,7 @@ metadata:
   namespace: ollama-system
 spec:
   selector:
-    app.kubernetes.io/name: ollama
-    app.kubernetes.io/instance: hermes-model
+    app: ollama
   ports:
     - port: 11434
       targetPort: 11434
