@@ -88,6 +88,9 @@ The script will ask you to select components. **Uncheck `localhost-gateway` and 
 All components will be installed in the `default` namespace.
 After ARK is installed, the Hermes 3:8B model is automatically registered.
 
+> 💡 **ARK version**: This project was tested with ARK `0.1.63`.  
+> For newer versions, check the [official ARK releases](https://github.com/mckinsey/agents-at-scale-ark/releases) and adjust the installation scripts if necessary.
+
 ### 5. Deploy all agents
 
 ```bash
