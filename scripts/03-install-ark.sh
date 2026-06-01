@@ -10,6 +10,12 @@ if ! command -v helm &> /dev/null; then
 fi
 echo "✅ Helm found."
 
+K3S_CONFIG="$HOME/.kube/arkollama-k3s.config"
+if [ -f "$K3S_CONFIG" ]; then
+    export KUBECONFIG="$K3S_CONFIG"
+    echo "🔧 Using k3s config: $KUBECONFIG"
+fi
+
 echo "📥 Installing ARK CLI..."
 npm install -g @agents-at-scale/ark@latest
 
