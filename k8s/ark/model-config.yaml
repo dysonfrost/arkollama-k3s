@@ -2,7 +2,6 @@ apiVersion: ark.mckinsey.com/v1alpha1
 kind: Model
 metadata:
   name: hermes-3-8b
-  namespace: ark-system
   annotations:
     # Pricing metadata (local = free)
     pricing.ark.mckinsey.com/input-cost: "0.000"
