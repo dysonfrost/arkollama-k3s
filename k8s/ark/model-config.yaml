@@ -1,0 +1,35 @@
+apiVersion: ark.mckinsey.com/v1alpha1
+kind: Model
+metadata:
+  name: hermes-3-8b
+  namespace: ark-system
+  annotations:
+    # Pricing metadata (local = free)
+    pricing.ark.mckinsey.com/input-cost: "0.000"
+    pricing.ark.mckinsey.com/output-cost: "0.000"
+    pricing.ark.mckinsey.com/currency: "USD"
+    pricing.ark.mckinsey.com/unit: "per-million-tokens"
+    # Model characteristics
+    model.ark.mckinsey.com/parameters: "8B"
+    model.ark.mckinsey.com/context-window: "32768"
+    model.ark.mckinsey.com/deployment-type: "local"
+    model.ark.mckinsey.com/provider: "ollama"
+    # Performance metrics (approximate)
+    performance.ark.mckinsey.com/avg-tokens-per-second: "45"
+    performance.ark.mckinsey.com/memory-usage: "6GB"
+    performance.ark.mckinsey.com/cpu-cores: "4"
+    # Operational metadata
+    ops.ark.mckinsey.com/last-updated: "2026-06-01"
+    ops.ark.mckinsey.com/cost-tier: "free"
+    ops.ark.mckinsey.com/recommended-use: "development,testing,analysis"
+spec:
+  config:
+    # Ollama exposes an OpenAI-compatible API at /v1
+    openai:
+      apiKey:
+        value: "not-used"      # Not required for local Ollama
+      baseUrl:
+        value: "http://ollama-service.ollama-system.svc.cluster.local:11434/v1"
+  model:
+    value: "hermes3:8b-llama3.1-q4_K_M"   # Exact model name pulled earlier
+  provider: openai
