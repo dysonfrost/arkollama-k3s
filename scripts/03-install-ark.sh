@@ -20,8 +20,15 @@ echo "📥 Installing ARK CLI..."
 npm install -g @agents-at-scale/ark@latest
 
 echo "🔧 Installing ARK components into the cluster..."
-# The install command will also check for other dependencies
 ark install
+
+# Register the LLM model in ARK
+echo "📝 Registering Hermes 3:8B model in ARK..."
+if [ -f "k8s/ark/model-config.yaml" ]; then
+    kubectl apply -f k8s/ark/model-config.yaml
+else
+    echo "⚠️ model-config.yaml not found - skipping model registration."
+fi
 
 echo "📊 ARK status:"
 ark status
