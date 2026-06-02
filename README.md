@@ -4,9 +4,34 @@
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-1.28+-blue)](https://kubernetes.io)
 [![ARK](https://img.shields.io/badge/ARK-0.1.63-orange)](https://github.com/mckinsey/agents-at-scale-ark)
 
-**Local AI agents powered by McKinsey's ARK framework, k3s, and Ollama (Hermes 3:8B).**
+## ⚡ Quickstart
 
-This project demonstrates how to deploy and interact with AI agents inside a local Kubernetes cluster. Each agent has its own permissions (RBAC) and can be used for typical DevOps/SRE tasks – pod diagnosis, log inspection, resource usage monitoring, and more.
+Get a working AI agent on your local Kubernetes cluster in minutes.
+
+### Prerequisites
+
+- [Helm](https://helm.sh/), [Node.js](https://nodejs.org/) (v18+), [kubectl](https://kubernetes.io/docs/tasks/tools/), [make](https://www.gnu.org/software/make/), [git](https://git-scm.com/)
+
+### Steps
+
+```bash
+git clone https://github.com/dysonfrost/arkollama-k3s.git
+cd arkollama-k3s
+
+make install-k3s          # install k3s
+make install-ollama       # deploy Ollama + pull Hermes 3:8B model (takes 5‑10 min)
+make install-ark          # install ARK framework (uncheck localhost-gateway and noah)
+make deploy-agents        # deploy MCP server + pod-doctor agent
+```
+
+### Test
+
+```bash
+export KUBECONFIG="$HOME/.kube/arkollama-k3s.config"
+ark query agent/pod-doctor "List pods in default namespace"
+```
+
+All resources are removed with `make clean`. For detailed instructions, see the [Installation](#-installation) section.
 
 ---
 
