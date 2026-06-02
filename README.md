@@ -6,24 +6,21 @@
 
 ## ⚡ Quickstart
 
-Get a working AI agent on your local Kubernetes cluster in minutes.
+Get a working AI agent on your local Kubernetes cluster with one command.
 
 ### Prerequisites
 
 - [Helm](https://helm.sh/), [Node.js](https://nodejs.org/) (v18+), [kubectl](https://kubernetes.io/docs/tasks/tools/), [make](https://www.gnu.org/software/make/), [git](https://git-scm.com/)
 
-### Steps
+### One‑command installation
 
 ```bash
 git clone https://github.com/dysonfrost/arkollama-k3s.git
 cd arkollama-k3s
-
-make install-k3s          # install k3s
-make install-ollama       # deploy Ollama + pull Hermes 3:8B model (takes 5‑10 min)
-make install-ark          # install ARK framework (uncheck localhost-gateway and noah)
-make deploy-mcp           # deploy Kubernetes MCP server (provides tools for agents)
-make deploy-agents        # deploy all agents (e.g., pod-doctor)
+make
 ```
+
+> ⚠️ During `make`, the ARK installer will ask you to select components. **Uncheck `localhost-gateway` and `noah`** (Noah is experimental), then press Enter.
 
 ### Test
 
@@ -32,7 +29,7 @@ export KUBECONFIG="$HOME/.kube/arkollama-k3s.config"
 ark query agent/pod-doctor "List pods in default namespace"
 ```
 
-All resources are removed with `make clean`. For detailed instructions, see the [Installation](#-installation) section.
+All resources are removed with `make clean`. For detailed step‑by‑step instructions, see the [Installation](#-installation) section.
 
 ---
 
