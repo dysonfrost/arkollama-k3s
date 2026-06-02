@@ -1,4 +1,4 @@
-.DEFAULT_GOAL := install
+.DEFAULT_GOAL := help
 
 .PHONY: help install install-k3s install-ollama install-ark deploy-mcp deploy-agents clean
 
