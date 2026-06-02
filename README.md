@@ -6,7 +6,7 @@
 
 **Local AI agents powered by McKinsey's ARK framework, k3s, and Ollama (Hermes 3:8B).**
 
-This project demonstrates how to deploy and interact with multiple AI agents inside a local Kubernetes cluster. Each agent has its own permissions (RBAC) and can be used for typical DevOps/SRE tasks – pod diagnosis, resource optimisation, security auditing, manifest generation, and Prometheus monitoring.
+This project demonstrates how to deploy and interact with AI agents inside a local Kubernetes cluster. Each agent has its own permissions (RBAC) and can be used for typical DevOps/SRE tasks – pod diagnosis, log inspection, resource usage monitoring, and more.
 
 ---
 
@@ -15,29 +15,18 @@ This project demonstrates how to deploy and interact with multiple AI agents ins
 - **Lightweight local cluster** – uses k3s, no cloud dependencies.
 - **Local LLM** – Hermes 3:8B (optimised for CPU/GPU) served by Ollama.
 - **Agentic framework** – ARK by McKinsey provides native Kubernetes CRDs for agents, models, queries.
-- **Production‑grade agents** – five ready‑to‑use examples:
-  - `pod-doctor` – diagnose failing pods (logs, events, describe)
-  - `resource-sage` – right‑size CPU/memory requests/limits
-  - `security-gate` – detect privileged containers and risky settings
-  - `manifest-master` – generate Kubernetes YAML from natural language
-  - `slo-assistant` – answer Prometheus queries (error rate, latency)
+- **MCP integration** – A full Kubernetes MCP server (19 tools) allows agents to interact with the cluster:
+  - List pods, describe pods, fetch logs, show events, display CPU/memory usage.
+- **Ready‑to‑use agent** – `pod-doctor` diagnoses pods, fetches logs, and suggests fixes.
 - **Isolated RBAC** – each agent has its own ServiceAccount and fine‑grained permissions.
 - **Non‑destructive** – does not overwrite your existing `~/.kube/config`.
 - **Clean commit history** – incremental, well‑documented steps.
 
-### `pod-doctor` – Planned MCP Tools
-
-The `pod-doctor` agent will eventually use the following Model Context Protocol (MCP) tools to interact with the cluster:
-
-- `kubectl-describe-pod` – retrieves pod details (status, events, conditions)
-- `kubectl-logs` – fetches the last 50 lines of logs from a container
-- `kubectl-events` – lists recent events for a specific pod
-
-These tools are not yet implemented in this version. Currently, the agent can still answer general pod diagnosis questions based on its training data.
+---
 
 ## 📋 Prerequisites
 
-- Linux (tested on Archlinux, but any distribution works)
+- Linux (tested on Arch Linux, but any distribution works)
 - 4+ CPU cores, 16+ GB RAM (32 GB recommended)
 - [k3s](https://k3s.io/)
 - [Helm](https://helm.sh/) (v3+)
@@ -47,7 +36,8 @@ These tools are not yet implemented in this version. Currently, the agent can st
 - [make](https://www.gnu.org/software/make/)
 - [git](https://git-scm.com/)
 
-> 💡 The installation scripts will automatically install k3s, Ollama, and ARK for you.
+> 💡 The installation scripts will automatically install k3s, Ollama, ARK, and the MCP server for you.
+
 ---
 
 ## 🏗️ Architecture
@@ -85,7 +75,7 @@ make install-ollama
 This creates a PVC, Deployment, and Service. It then downloads the 4.9 GB model (`hermes3:8b-llama3.1-q4_K_M`).  
 **This may take 5‑10 minutes** depending on your internet connection.
 
-### 4. Install ARK framework
+### 4. Install ARK framework and register the LLM model
 
 ```bash
 make install-ark
@@ -93,23 +83,39 @@ make install-ark
 ```
 
 The script will ask you to select components. **Uncheck `localhost-gateway` and `noah`** (Noah is experimental).  
-All components will be installed in the `default` namespace.
+All components will be installed in the `default` namespace.  
 After ARK is installed, the Hermes 3:8B model is automatically registered.
 
-> 💡 **ARK version**: This project was tested with ARK `0.1.63`.  
-> For newer versions, check the [official ARK releases](https://github.com/mckinsey/agents-at-scale-ark/releases) and adjust the installation scripts if necessary.
+### 5. Deploy the MCP server (Kubernetes tools)
 
-### 5. Deploy all agents
+```bash
+make deploy-mcp
+```
+
+This deploys:
+- Namespace `mcp-system`
+- ServiceAccount, ClusterRole, ClusterRoleBinding
+- Deployment and Service for the Kubernetes MCP server
+- An `MCPServer` resource that ARK uses to discover tools
+
+After successful deployment, ARK automatically discovers 19 tools (e.g., `pods-list`, `pods-get`, `pods-log`, `events-list`, `pods-top`).  
+Verify with:
+
+```bash
+kubectl get mcpserver kubernetes-mcp-server
+kubectl get tools | grep kubernetes-mcp-server
+```
+
+### 6. Deploy the `pod-doctor` agent
 
 ```bash
 make deploy-agents
-# or: ./scripts/manage-agents.sh apply
 ```
 
-This will:
-- Apply RBAC for each agent (ServiceAccount, Role, RoleBinding)
-- Create the Agent resources
-- Deploy example queries (optional)
+This command:
+- Applies RBAC for `pod-doctor` (ServiceAccount, Role, RoleBinding)
+- Creates the Agent resource
+- Deploys example queries (optional)
 
 ---
 
@@ -118,44 +124,94 @@ This will:
 ### List agents and models
 
 ```bash
-# Using the ARK CLI (requires correct KUBECONFIG)
-export KUBECONFIG=~/.kube/arkollama-k3s.config
+# Using the ARK CLI
+export KUBECONFIG="$HOME/.kube/arkollama-k3s.config"
 ark agents
 ark models
 
-# Or using kubectl
+# Using kubectl
 kubectl get agents
 kubectl get models
 ```
 
-### Send a query to an agent (declarative – YAML)
+### Interact with the `pod-doctor` agent
 
-```bash
-kubectl apply -f agents/pod-doctor/queries/diagnose-coredns.yaml
-kubectl get queries -w
+The agent can list pods, describe a pod (requires the exact full name), fetch logs, show events, and display resource usage.
+
+#### Examples
+
+| Task | Command |
+|------|---------|
+| List all pods in a namespace | `ark query agent/pod-doctor "List pods in kube-system"` |
+| Describe a pod (exact name) | `ark query agent/pod-doctor "Describe pod coredns-8db54c48d-zzk5d in namespace kube-system"` |
+| Get logs (summary) | `ark query agent/pod-doctor "Show logs of ollama-688d557dc8-n77dp in namespace ollama-system"` |
+| Show events | `ark query agent/pod-doctor "Show recent events for pod coredns-8db54c48d-zzk5d in kube-system"` |
+| Resource usage (explicit tool call) | `ark query agent/pod-doctor "Call kubernetes-mcp-server-pods-top with namespace='ollama-system' and podName='ollama-688d557dc8-n77dp'"` |
+
+> ⚠️ **Important**: The agent cannot guess partial pod names (e.g., “coredns”). Always list pods first to get the exact full name.
+
+### Using declarative queries (YAML)
+
+Create a file `query.yaml`:
+
+```yaml
+apiVersion: ark.mckinsey.com/v1alpha1
+kind: Query
+metadata:
+  name: list-pods-default
+spec:
+  input: "List all pods in namespace default"
+  targets:
+    - name: pod-doctor
+      type: agent
 ```
 
-### Send a query via the ARK API (interactive)
+Apply and check the result:
 
 ```bash
-# Port‑forward the ARK API
+kubectl apply -f query.yaml
+kubectl get query list-pods-default -w
+kubectl get query list-pods-default -o jsonpath='{.status.response.content}'
+```
+
+### Direct API access
+
+```bash
 kubectl port-forward -n default svc/ark-api 8080:80 &
 curl -X POST http://localhost:8080/v1/agents/default/pod-doctor/query \
   -H "Content-Type: application/json" \
-  -d '{"input": "Why is the coredns pod in kube-system not ready?"}'
+  -d '{"input": "List pods in kube-system"}'
 ```
 
-### Run a quick test with the ARK CLI
+---
 
-```bash
-ark query agent/pod-doctor "List all pods in namespace kube-system"
+## 📁 Project Structure
+
+```
+arkollama-k3s/
+├── agents/
+│   └── pod-doctor/           # Agent definition, RBAC, and queries
+│       ├── agent.yaml
+│       ├── rbac.yaml
+│       └── queries/          # Example query YAMLs
+├── k8s/
+│   ├── ollama/               # Ollama PVC, Deployment, Service
+│   ├── ark/                  # Model configuration, MCPServer, ARK resources
+│   └── mcp/                  # MCP server deployment (ServiceAccount, Deployment, Service)
+├── scripts/                  # Installation and cleanup scripts
+├── docs/
+│   ├── architecture.md
+│   ├── troubleshooting.md
+│   └── limitations.md
+├── Makefile
+└── README.md
 ```
 
 ---
 
 ## 🗑️ Cleanup
 
-To remove everything (agents, ARK, Ollama, PVCs):
+To remove everything (agents, MCP server, ARK, Ollama, PVCs):
 
 ```bash
 make clean
@@ -169,34 +225,22 @@ sudo /usr/local/bin/k3s-uninstall.sh
 
 ---
 
-## 📁 Project Structure
+## ⚠️ Limitations
 
-```
-arkollama-k3s/
-├── agents/                     # Each agent is self‑contained
-│   ├── pod-doctor/
-│   │   ├── agent.yaml
-│   │   ├── rbac.yaml
-│   │   └── queries/
-│   ├── resource-sage/
-│   ├── security-gate/
-│   ├── manifest-master/
-│   └── slo-assistant/
-├── k8s/
-│   ├── ollama/                 # Ollama deployment (PVC, Deployment, Service)
-│   └── ark/                    # Shared model configuration
-├── scripts/
-│   ├── 01-install-k3s.sh
-│   ├── 02-install-ollama.sh
-│   ├── 03-install-ark.sh
-│   ├── 04-manage-agents.sh
-│   └── 05-cleanup.sh
-├── docs/
-│   ├── architecture.md
-│   └── troubleshooting.md
-├── Makefile
-└── README.md
-```
+The `pod-doctor` agent uses the **Hermes 3:8B** local LLM. It is:
+
+**✅ Good for:**
+- Listing pods
+- Describing a pod (with the exact full name)
+- Summarising logs and events
+- Suggesting remediation steps
+
+**❌ Not reliable for:**
+- Guessing partial pod names – it will refuse and ask you to list pods first.
+- Counting occurrences (e.g., “how many POST requests”) – use `kubectl` with `grep` and `wc` instead.
+- Extracting precise timestamps or structured data (JSON).
+
+For a full list of limitations, see [`docs/limitations.md`](docs/limitations.md).
 
 ---
 
@@ -209,7 +253,7 @@ For major changes, please open an issue first to discuss what you would like to 
 
 ## 📄 License
 
-MIT © Jérémy Reisser
+MIT © [dysonfrost](https://github.com/dysonfrost)
 
 ---
 
@@ -219,3 +263,4 @@ MIT © Jérémy Reisser
 - [Ollama](https://ollama.com) for easy local LLM serving
 - [k3s](https://k3s.io) by Rancher
 - [Hermes 3:8B](https://ollama.com/library/hermes3:8b-llama3.1-q4_K_M) model
+- [Kubernetes MCP Server](https://github.com/containers/kubernetes-mcp-server)

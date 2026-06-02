@@ -1,29 +1,53 @@
 # Troubleshooting
 
-Common issues and solutions when deploying `arkollama-k3s`.
+Common issues and solutions when deploying and using `arkollama-k3s`.
 
 ---
 
-## 🔧 K3s installation
+## 🤖 Agent `pod-doctor` issues
 
-### `kubectl` cannot connect to the cluster (TLS certificate error)
+### Agent responds “I need the full pod name”
 
-**Symptom**:
-```
-Error: kubernetes cluster unreachable: Get "https://127.0.0.1:6443/version": tls: failed to verify certificate: x509: certificate signed by unknown authority
-```
+**Cause**: You used a partial name (e.g., “coredns” instead of the full name like `coredns-8db54c48d-zzk5d`).
 
-**Cause**: k3s uses a self‑signed certificate. The `KUBECONFIG` variable is not set, so `kubectl` uses the wrong configuration (e.g., a production config from `~/.kube/config`).
+**Solution**: First list the pods to obtain the exact name, then use it:
 
-**Solution**:
 ```bash
-export KUBECONFIG="$HOME/.kube/arkollama-k3s.config"
+ark query agent/pod-doctor "List pods in kube-system"
+ark query agent/pod-doctor "Describe pod coredns-8db54c48d-zzk5d in namespace kube-system"
 ```
-The installation scripts (`03-install-ark.sh` and `04-cleanup.sh`) automatically set this variable. If running manual commands, set it first.
+
+### Agent cannot count occurrences or give exact numbers
+
+**Cause**: The local Hermes 3:8B LLM is not reliable for counting or exact numerical extraction. This is a known limitation.
+
+**Solution**: Use `kubectl` directly for counting:
+
+```bash
+kubectl logs -n ollama-system ollama-688d557dc8-n77dp | grep "POST" | wc -l
+```
+
+### Agent uses `pods-list` when you asked for details (e.g., `describe`)
+
+**Cause**: The model sometimes misinterprets the request, even with the strict prompt.
+
+**Workaround**: Rephrase your query using the explicit tool call syntax:
+
+```bash
+ark query agent/pod-doctor "Call kubernetes-mcp-server-pods-get with name='ollama-688d557dc8-n77dp', namespace='ollama-system'"
+```
+
+### Agent says a pod does not exist even though it is running
+
+**Cause**: You may be using a partial name, or the pod is in a different namespace.
+
+**Solution**: Verify the exact pod name and namespace:
+- List all pods in the suspected namespace to get the exact name.
+- Ensure the namespace is correct.
 
 ---
 
-## 🐳 Ollama deployment
+## 🐳 Ollama deployment issues
 
 ### Model pull fails with `file does not exist`
 
@@ -55,7 +79,7 @@ kubectl -n ollama-system exec deployment/ollama -- ollama list
 
 ---
 
-## 📦 ARK installation
+## 📦 ARK installation issues
 
 ### Cert‑manager images fail to pull (`ImagePullBackOff`)
 
@@ -64,10 +88,10 @@ kubectl -n ollama-system exec deployment/ollama -- ollama list
 Failed to pull image "quay.io/jetstack/cert-manager-controller:v1.20.2": ... 504 Gateway Time-out
 ```
 
-**Cause**: The `quay.io` registry is sometimes slow or returns transient errors (502/504).
+**Cause**: The `quay.io` registry sometimes returns transient errors (502/504) or is rate‑limited.
 
 **Solution**:
-Wait a few minutes and retry `ark install`. If the problem persists, pre‑pull the images manually on your node:
+Wait a few minutes and retry `ark install`. If the problem persists, pre‑pull the images manually on your node (k3s uses containerd):
 
 ```bash
 sudo ctr image pull quay.io/jetstack/cert-manager-controller:v1.20.2
@@ -80,24 +104,6 @@ Then delete the failing pods:
 ```bash
 kubectl delete pods -n cert-manager --all
 ```
-
-### ARK components are installed but `ark agents` / `ark models` show nothing
-
-**Symptom**:
-```
-ark! warning: no agents available
-No models found
-```
-
-**Cause**: The CLI uses the namespace from your current `kubectl` context, but resources are in a different namespace.
-
-**Solution**:
-- Make sure you are using the correct kubeconfig (see TLS error above).
-- Set the default namespace for your context:
-  ```bash
-  kubectl config set-context --current --namespace=default
-  ```
-- This project places all ARK resources in the `default` namespace for simplicity.
 
 ### `ark install` fails with `no endpoints available for service cert-manager-webhook`
 
@@ -117,26 +123,7 @@ Then re‑run `ark install`. It will skip already installed components.
 
 ---
 
-## 🤖 Agents
-
-### Agent fails with `ImagePullBackOff` or `CrashLoopBackOff`
-
-**Symptom**: The agent pod created by ARK cannot start.
-
-**Cause**: The agent image is missing or the agent definition references an unavailable model.
-
-**Solution**:
-1. Verify that the model is registered and `ModelAvailable` condition is `True`:
-   ```bash
-   kubectl get model hermes-3-8b -o yaml | grep -A5 Status
-   ```
-2. Check the agent logs:
-   ```bash
-   kubectl logs -l ark.agent=pod-doctor -n default
-   ```
-3. Ensure the agent’s `modelRef` matches the model name and namespace.
-
-## 🧹 Cleanup
+## 🧹 Cleanup issues
 
 ### `make clean` fails with TLS errors
 
@@ -147,11 +134,14 @@ Error: kubernetes cluster unreachable: ... x509: certificate signed by unknown a
 
 **Cause**: The cleanup script does not have the correct `KUBECONFIG` set.
 
-**Solution**: The script `04-cleanup.sh` now sets `KUBECONFIG` automatically. If you still see errors, run:
+**Solution**: The script `04-cleanup.sh` automatically sets `KUBECONFIG` to `~/.kube/arkollama-k3s.config`. If you still see errors, manually export it:
+
 ```bash
 export KUBECONFIG="$HOME/.kube/arkollama-k3s.config"
 make clean
 ```
+
+---
 
 ## 📝 Getting help
 
