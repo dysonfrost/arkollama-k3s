@@ -4,14 +4,10 @@ set -e
 
 usage() {
     echo "Usage: $0 {apply|delete}"
-    echo "  apply  - Deploy all agents (RBAC, agents, example queries)"
-    echo "  delete - Remove all agents (RBAC, agents, example queries)"
     exit 1
 }
 
-if [ $# -ne 1 ]; then
-    usage
-fi
+if [ $# -ne 1 ]; then usage; fi
 
 ACTION=$1
 AGENTS_DIR="agents"
