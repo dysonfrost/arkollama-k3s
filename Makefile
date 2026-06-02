@@ -13,7 +13,9 @@ help:
 	@echo "  clean            - Remove everything (agents, ARK, Ollama, MCP, PVCs)"
 
 install: install-k3s install-ollama install-ark deploy-mcp deploy-agents
-	@echo "✅ All components installed. Test with: ark query agent/pod-doctor \"List pods in default namespace\""
+	@echo "✅ All components installed."
+	@echo "👉 To test: export KUBECONFIG=\"$$HOME/.kube/arkollama-k3s.config\""
+	@echo "   then run: ark query agent/pod-doctor \"List pods in default namespace\""
 
 install-k3s:
 	./scripts/01-install-k3s.sh
