@@ -21,7 +21,8 @@ cd arkollama-k3s
 make install-k3s          # install k3s
 make install-ollama       # deploy Ollama + pull Hermes 3:8B model (takes 5‑10 min)
 make install-ark          # install ARK framework (uncheck localhost-gateway and noah)
-make deploy-agents        # deploy MCP server + pod-doctor agent
+make deploy-mcp           # deploy Kubernetes MCP server (provides tools for agents)
+make deploy-agents        # deploy all agents (e.g., pod-doctor)
 ```
 
 ### Test
