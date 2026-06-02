@@ -30,9 +30,12 @@ if command -v ark &> /dev/null; then
     fi
 fi
 
-# Remove namespaces even if the cluster is not fully reachable? 
-# kubectl may still work for namespace deletion if the API server is up but TLS fails.
-# We'll try anyway, ignoring errors.
+# Remove MCP server resources (MCPServer, namespace)
+echo "Removing MCP server resources..."
+kubectl delete mcpserver kubernetes-mcp-server -n default --ignore-not-found=true 2>/dev/null || true
+kubectl delete namespace mcp-system --ignore-not-found=true 2>/dev/null || true
+
+# Remove remaining namespaces
 kubectl delete namespace ollama-system --ignore-not-found=true 2>/dev/null || true
 kubectl delete namespace ark-system --ignore-not-found=true 2>/dev/null || true
 
