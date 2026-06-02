@@ -1,0 +1,11 @@
+apiVersion: ark.mckinsey.com/v1alpha1
+kind: MCPServer
+metadata:
+  name: kubernetes-mcp-server
+  namespace: default
+spec:
+  address:
+    value: "http://kubernetes-mcp-server.mcp-system.svc.cluster.local:8080/sse"
+  timeout: "60s"
+  transport: sse
+  description: "Kubernetes MCP server providing tools for pod inspection, logs, events, and resource usage"
