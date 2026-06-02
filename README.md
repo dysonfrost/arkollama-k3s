@@ -17,10 +17,10 @@ Get a working AI agent on your local Kubernetes cluster with one command.
 ```bash
 git clone https://github.com/dysonfrost/arkollama-k3s.git
 cd arkollama-k3s
-make
+make install
 ```
 
-> ⚠️ During `make`, the ARK installer will ask you to select components. **Uncheck `localhost-gateway` and `noah`** (Noah is experimental), then press Enter.
+> ⚠️ During `make install`, the ARK installer will ask you to select components. **Uncheck `localhost-gateway` and `noah`** (Noah is experimental), then press Enter.
 
 ### Test
 
