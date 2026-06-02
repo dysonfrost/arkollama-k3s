@@ -1,0 +1,9 @@
+apiVersion: ark.mckinsey.com/v1alpha1
+kind: Query
+metadata:
+  name: list-pods-default
+spec:
+  input: "Call the tool kubernetes-mcp-server-pods-list with parameter namespace='default'. Return the full output exactly as returned by the tool, without any extra commentary."
+  target:
+    name: pod-doctor
+    type: agent

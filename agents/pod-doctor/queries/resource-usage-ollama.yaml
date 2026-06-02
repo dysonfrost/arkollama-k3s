@@ -1,0 +1,9 @@
+apiVersion: ark.mckinsey.com/v1alpha1
+kind: Query
+metadata:
+  name: resource-usage-ollama
+spec:
+  input: "Call kubernetes-mcp-server-pods-top with namespace='ollama-system' and podName='ollama-688d557dc8-n77dp'"
+  target:
+    name: pod-doctor
+    type: agent
