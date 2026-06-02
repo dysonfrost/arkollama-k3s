@@ -134,7 +134,7 @@ Error: kubernetes cluster unreachable: ... x509: certificate signed by unknown a
 
 **Cause**: The cleanup script does not have the correct `KUBECONFIG` set.
 
-**Solution**: The script `04-cleanup.sh` automatically sets `KUBECONFIG` to `~/.kube/arkollama-k3s.config`. If you still see errors, manually export it:
+**Solution**: The script `05-cleanup.sh` automatically sets `KUBECONFIG` to `~/.kube/arkollama-k3s.config`. If you still see errors, manually export it:
 
 ```bash
 export KUBECONFIG="$HOME/.kube/arkollama-k3s.config"
