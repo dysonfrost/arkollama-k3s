@@ -22,12 +22,19 @@ npm install -g @agents-at-scale/ark@latest
 echo "🔧 Installing ARK components into the cluster..."
 ark install
 
-# Register the LLM model in ARK
-echo "📝 Registering Hermes 3:8B model in ARK..."
-if [ -f "k8s/ark/model-config.yaml" ]; then
-    kubectl apply -f k8s/ark/model-config.yaml
+# Register both LLM models in ARK
+echo "📝 Registering Hermes 3:8B model..."
+if [ -f "k8s/ark/model-config-hermes.yaml" ]; then
+    kubectl apply -f k8s/ark/model-config-hermes.yaml
 else
-    echo "⚠️ model-config.yaml not found - skipping model registration."
+    echo "⚠️ model-config-hermes.yaml not found - skipping Hermes model registration."
+fi
+
+echo "📝 Registering Qwen3.5:9B model..."
+if [ -f "k8s/ark/model-config-qwen.yaml" ]; then
+    kubectl apply -f k8s/ark/model-config-qwen.yaml
+else
+    echo "⚠️ model-config-qwen.yaml not found - skipping Qwen model registration."
 fi
 
 echo "📊 ARK status:"
