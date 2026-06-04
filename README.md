@@ -36,11 +36,10 @@ All resources are removed with `make clean`. For detailed step‑by‑step instr
 ## 🚀 Features
 
 - **Lightweight local cluster** – uses k3s, no cloud dependencies.
-- **Local LLM** – Hermes 3:8B (optimised for CPU/GPU) served by Ollama.
-- **Agentic framework** – ARK by McKinsey provides native Kubernetes CRDs for agents, models, queries.
-- **MCP integration** – A full Kubernetes MCP server (19 tools) allows agents to interact with the cluster:
-  - List pods, describe pods, fetch logs, show events, display CPU/memory usage.
-- **Ready‑to‑use agent** – `pod-doctor` diagnoses pods, fetches logs, and suggests fixes.
+- **Two local LLMs** – **Hermes 3:8B** (fast, good for simple queries) and **Qwen3.5‑9B** (more accurate for tool calling, used by default).
+- **Agentic framework** – ARK by McKinsey provides native Kubernetes CRDs for agents, models, queries, and MCP servers.
+- **Full MCP integration** – A dedicated Kubernetes MCP server exposes 19 tools (list pods, describe, logs, events, top, etc.) that agents can call directly.
+- **Ready‑to‑use agent** – `pod-doctor` diagnoses pods, fetches logs, shows events, and suggests fixes using Qwen3.5‑9B.
 - **Isolated RBAC** – each agent has its own ServiceAccount and fine‑grained permissions.
 - **Non‑destructive** – does not overwrite your existing `~/.kube/config`.
 - **Clean commit history** – incremental, well‑documented steps.
@@ -88,17 +87,20 @@ make install-k3s
 Your k3s kubeconfig will be saved as `~/.kube/arkollama-k3s.config`.  
 The script never overwrites your existing `~/.kube/config`.
 
-### 3. Deploy Ollama and pull the Hermes 3:8B model
+### 3. Deploy Ollama and pull both models (Hermes + Qwen)
 
 ```bash
 make install-ollama
 # or: ./scripts/02-install-ollama.sh
 ```
 
-This creates a PVC, Deployment, and Service. It then downloads the 4.9 GB model (`hermes3:8b-llama3.1-q4_K_M`).  
-**This may take 5‑10 minutes** depending on your internet connection.
+This creates a PVC, Deployment, and Service. It then downloads:
+- **Hermes 3:8B** (`hermes3:8b-llama3.1-q4_K_M`, ~4.9 GB)
+- **Qwen3.5‑9B** (`qwen3.5:9b`, ~5 GB)
 
-### 4. Install ARK framework and register the LLM model
+**This may take 10‑15 minutes** depending on your internet connection.
+
+### 4. Install ARK framework and register both models
 
 ```bash
 make install-ark
@@ -107,7 +109,9 @@ make install-ark
 
 The script will ask you to select components. **Uncheck `localhost-gateway` and `noah`** (Noah is experimental).  
 All components will be installed in the `default` namespace.  
-After ARK is installed, the Hermes 3:8B model is automatically registered.
+After ARK is installed, **both models** are automatically registered:
+- `hermes-3-8b` (fast)
+- `qwen3.5-9b` (more accurate, default for the agent)
 
 ### 5. Deploy the MCP server (Kubernetes tools)
 
@@ -129,7 +133,7 @@ kubectl get mcpserver kubernetes-mcp-server
 kubectl get tools | grep kubernetes-mcp-server
 ```
 
-### 6. Deploy the `pod-doctor` agent
+### 6. Deploy the `pod-doctor` agent (uses Qwen by default)
 
 ```bash
 make deploy-agents
@@ -137,7 +141,7 @@ make deploy-agents
 
 This command:
 - Applies RBAC for `pod-doctor` (ServiceAccount, Role, RoleBinding)
-- Creates the Agent resource
+- Creates the Agent resource (referencing `qwen3.5-9b` and the MCP tools)
 - Deploys example queries (optional)
 
 ---
@@ -159,19 +163,19 @@ kubectl get models
 
 ### Interact with the `pod-doctor` agent
 
-The agent can list pods, describe a pod (requires the exact full name), fetch logs, show events, and display resource usage.
+The agent can list pods, describe a pod, fetch logs, show events, and display resource usage. With Qwen3.5‑9B, the agent can often find the full pod name even if you give a short prefix (e.g., "coredns"), but providing the exact name is still recommended for reliability.
 
 #### Examples
 
 | Task | Command |
 |------|---------|
 | List all pods in a namespace | `ark query agent/pod-doctor "List pods in kube-system"` |
-| Describe a pod (exact name) | `ark query agent/pod-doctor "Describe pod coredns-8db54c48d-zzk5d in namespace kube-system"` |
-| Get logs (summary) | `ark query agent/pod-doctor "Show logs of ollama-688d557dc8-n77dp in namespace ollama-system"` |
-| Show events | `ark query agent/pod-doctor "Show recent events for pod coredns-8db54c48d-zzk5d in kube-system"` |
-| Resource usage (explicit tool call) | `ark query agent/pod-doctor "Call kubernetes-mcp-server-pods-top with namespace='ollama-system' and podName='ollama-688d557dc8-n77dp'"` |
+| Describe a pod (short name works) | `ark query agent/pod-doctor "Describe coredns pod in kube-system"` |
+| Get logs | `ark query agent/pod-doctor "Show logs of ollama pod in ollama-system"` |
+| Show events | `ark query agent/pod-doctor "Show events for coredns in kube-system"` |
+| Resource usage | `ark query agent/pod-doctor "Top pods in default namespace"` |
 
-> ⚠️ **Important**: The agent cannot guess partial pod names (e.g., “coredns”). Always list pods first to get the exact full name.
+> 💡 **Tip**: If the agent fails to resolve a short name, list pods first to get the exact name, then run the describe/log command.
 
 ### Using declarative queries (YAML)
 
@@ -197,15 +201,6 @@ kubectl get query list-pods-default -w
 kubectl get query list-pods-default -o jsonpath='{.status.response.content}'
 ```
 
-### Direct API access
-
-```bash
-kubectl port-forward -n default svc/ark-api 8080:80 &
-curl -X POST http://localhost:8080/v1/agents/default/pod-doctor/query \
-  -H "Content-Type: application/json" \
-  -d '{"input": "List pods in kube-system"}'
-```
-
 ---
 
 ## 📁 Project Structure
@@ -219,8 +214,8 @@ arkollama-k3s/
 │       └── queries/          # Example query YAMLs
 ├── k8s/
 │   ├── ollama/               # Ollama PVC, Deployment, Service
-│   ├── ark/                  # Model configuration, MCPServer, ARK resources
-│   └── mcp/                  # MCP server deployment (ServiceAccount, Deployment, Service)
+│   ├── ark/                  # Model configurations (Hermes + Qwen)
+│   └── mcp/                  # MCP server deployment (ServiceAccount, Deployment, Service, MCPServer)
 ├── scripts/                  # Installation and cleanup scripts
 ├── docs/
 │   ├── architecture.md
@@ -248,9 +243,28 @@ sudo /usr/local/bin/k3s-uninstall.sh
 
 ---
 
+## 📊 Model Comparison
+
+| Feature | Hermes 3:8B | Qwen3.5‑9B |
+|---------|-------------|-------------|
+| **Size (quantized)** | ~4.9 GB | ~5 GB |
+| **Memory usage** | ~5‑6 GB | ~6‑7 GB |
+| **Inference speed (CPU)** | 2‑3 sec/query | 5‑10 sec/query |
+| **Tool calling accuracy** | Good | Excellent |
+| **Short pod name resolution** | Unreliable | Often works |
+| **Log summarisation** | Good | Very good |
+| **Reasoning depth** | Basic | Deeper |
+| **Context window** | 32 k tokens | 262 k tokens |
+| **Best for** | Speed, simple queries | Accuracy, complex tool‑calling |
+| **Default agent model** | No (fallback) | Yes (pod-doctor) |
+
+Both models are pulled by default. To switch the agent to Hermes, edit `agents/pod-doctor/agent.yaml` and change `modelRef.name` to `hermes-3-8b`.
+
+---
+
 ## ⚠️ Limitations
 
-The `pod-doctor` agent uses the **Hermes 3:8B** local LLM. It is:
+The `pod-doctor` agent uses the **Qwen3.5‑9B** local LLM by default. Qwen is **more accurate** for tool calling but **slower** (5‑10 seconds per query on CPU). Hermes is faster (~2‑3 seconds) but may make more mistakes.
 
 **✅ Good for:**
 - Listing pods
@@ -259,7 +273,6 @@ The `pod-doctor` agent uses the **Hermes 3:8B** local LLM. It is:
 - Suggesting remediation steps
 
 **❌ Not reliable for:**
-- Guessing partial pod names – it will refuse and ask you to list pods first.
 - Counting occurrences (e.g., “how many POST requests”) – use `kubectl` with `grep` and `wc` instead.
 - Extracting precise timestamps or structured data (JSON).
 
@@ -286,4 +299,5 @@ MIT © [dysonfrost](https://github.com/dysonfrost)
 - [Ollama](https://ollama.com) for easy local LLM serving
 - [k3s](https://k3s.io) by Rancher
 - [Hermes 3:8B](https://ollama.com/library/hermes3:8b-llama3.1-q4_K_M) model
+- [Qwen3.5‑9B](https://ollama.com/library/qwen3.5) model
 - [Kubernetes MCP Server](https://github.com/containers/kubernetes-mcp-server)
