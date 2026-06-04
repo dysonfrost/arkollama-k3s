@@ -1,9 +1,9 @@
 apiVersion: ark.mckinsey.com/v1alpha1
 kind: Query
 metadata:
-  name: list-pods-default
+  name: describe-coredns
 spec:
-  input: "List all pods in the default namespace."
+  input: "Describe the coredns pod in kube-system."
   target:
     name: pod-doctor
     type: agent

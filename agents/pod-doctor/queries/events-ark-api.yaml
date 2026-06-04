@@ -1,9 +1,9 @@
 apiVersion: ark.mckinsey.com/v1alpha1
 kind: Query
 metadata:
-  name: list-pods-default
+  name: events-ark-api
 spec:
-  input: "List all pods in the default namespace."
+  input: "Show recent events for the ark-api pod in default namespace."
   target:
     name: pod-doctor
     type: agent

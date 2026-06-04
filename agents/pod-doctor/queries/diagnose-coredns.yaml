@@ -1,0 +1,9 @@
+apiVersion: ark.mckinsey.com/v1alpha1
+kind: Query
+metadata:
+  name: diagnose-coredns
+spec:
+  input: "The coredns pod in kube-system seems slow. Please check its logs, events, and resource usage, and suggest a fix."
+  target:
+    name: pod-doctor
+    type: agent

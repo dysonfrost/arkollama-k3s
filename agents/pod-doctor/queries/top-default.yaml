@@ -1,9 +1,9 @@
 apiVersion: ark.mckinsey.com/v1alpha1
 kind: Query
 metadata:
-  name: list-pods-default
+  name: top-default
 spec:
-  input: "List all pods in the default namespace."
+  input: "Show CPU and memory usage for all pods in the default namespace."
   target:
     name: pod-doctor
     type: agent
